@@ -112,6 +112,11 @@ $PCOIN_HOME/
 - 编译产物为 ad-hoc 签名，现代 Mac 上可通过 Gatekeeper；无 hardened runtime 但 JIT（RandomX 需要，含 Apple Silicon 的 `MAP_JIT`）正常工作。
 - 脚本不内置任何收款地址、私钥或抽成：**请自行核对源码后再运行**（尤其是从非官方渠道拿到的分叉版本）。
 
+## 相关链接
+
+- 上游源码：[pars5555/pcoin](https://github.com/pars5555/pcoin)
+- PCoin 交易所邀请链接：[https://exchange.pc.am/?ref=VNRNJ4N7](https://exchange.pc.am/?ref=VNRNJ4N7)（含推荐码 `VNRNJ4N7`，通过此链接注册推荐人可能获得返佣）
+
 ## 免责声明
 
 按 MIT 许可“原样”提供。挖矿收益、电费、硬件损耗、行情风险自行承担。请确认你所在司法辖区对加密货币挖矿的合规要求。
