@@ -6,7 +6,7 @@
 #   ./pcoin-mac.sh                 # 全流程: 装依赖 -> 编译 -> 启动节点 -> 连池开挖
 #   ./pcoin-mac.sh build           # 只编译 (bitcoind / bitcoin-cli)
 #   ./pcoin-mac.sh start           # 后台启动节点
-#   ./pcoin-mac.sh mine [地址] [线程数]   # 连池开挖 (默认: 物理核数)
+#   ./pcoin-mac.sh mine [地址] [线程数]   # 连池开挖 (默认: Intel=物理核 / Apple Silicon=性能核)
 #   ./pcoin-mac.sh status          # 查看节点高度 + 矿机状态
 #   ./pcoin-mac.sh logs            # 跟踪 debug.log (Ctrl-C 退出, 不影响挖矿)
 #   ./pcoin-mac.sh stop            # 停挖 + 关节点
@@ -44,6 +44,23 @@ die()     { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 [ "$(uname -s)" = "Darwin" ] || die "此脚本仅用于 macOS。"
 
 physical_cores() { sysctl -n hw.physicalcpu; }
+
+# 挖矿默认线程数:
+#   Intel                -> 物理核数 (RandomX 在超线程/SMT 上是负收益, 不用逻辑核)
+#   Apple Silicon arm64  -> 只数性能核 hw.perflevel0.physicalcpu;
+#                           能效核 (perflevel1) 会拖慢这种重型 ALU/内存带宽负载, 不划算。
+# 取性能核失败时回退到物理核总数。
+mine_threads() {
+    if [ "$(uname -m)" = "arm64" ]; then
+        local p
+        p="$(sysctl -n hw.perflevel0.physicalcpu 2>/dev/null || true)"
+        if [ -n "$p" ] && [ "$p" -gt 0 ] 2>/dev/null; then
+            echo "$p"
+            return
+        fi
+    fi
+    physical_cores
+}
 
 setup_path() {
     if [ -x /usr/local/bin/brew ]; then
@@ -213,7 +230,7 @@ start_node() {
 
 do_mine() {
     local addr="${1:-$PCOIN_ADDRESS}"
-    local threads="${2:-$(physical_cores)}"
+    local threads="${2:-$(mine_threads)}"
     case "$addr" in
         *REPLACE_WITH_YOUR_OWN_ADDRESS*)
             die "还没有设置收款地址！请用: $0 mine <你的pc1q地址> [线程数]  或  export PCOIN_ADDRESS=pc1q... 后再运行。"
@@ -222,7 +239,12 @@ do_mine() {
     start_node
     c_info "连接矿池 $PCOIN_POOL"
     c_info "收款地址: $addr"
-    c_info "挖矿线程: $threads (= 物理核数；RandomX 超线程是负收益，勿超过物理核)"
+    if [ "$(uname -m)" = "arm64" ]; then
+        c_info "架构: Apple Silicon (arm64)，挖矿线程默认只取性能核 $(mine_threads) 个（不含能效核）"
+    else
+        c_info "架构: $(uname -m)，挖矿线程默认取物理核 $(mine_threads) 个（不含超线程）"
+    fi
+    c_info "挖矿线程: $threads（RandomX 上超线程 / 能效核都是负收益，勿手动调高）"
     # 重复调用 startpoolmining 会重启矿机并清零计数，属正常
     rpc startpoolmining "$PCOIN_POOL" "$addr" "$threads"
     sleep 3
