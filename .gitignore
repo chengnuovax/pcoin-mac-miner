@@ -1,0 +1,15 @@
+# macOS / editor noise
+.DS_Store
+*.swp
+*~
+
+# Local runtime artifacts (never commit the node data / wallet / logs)
+pcoin/
+data/
+*.log
+*.pid
+debug.log
+bitcoind-stdout.log
+
+# Local config containing the random RPC password
+pcoin.conf

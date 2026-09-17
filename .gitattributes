@@ -1,0 +1,7 @@
+# Ensure shell scripts always use LF, even when checked out on Windows,
+# otherwise a CRLF script breaks with '\r' errors on macOS/Linux.
+*.sh   text eol=lf
+*.md   text eol=lf
+LICENSE text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
